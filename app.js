@@ -23,7 +23,7 @@ function validateV1(arguments, defaults) {
   takes arguments
   i.e.
   let args = { a: 1 }
-  let defaults = { a: { type: 'number', default: 0 }, b: { type: 'number', default: 0 } }
+  let defaults = { a: { type: 'number', default: 0, validate: () => { return bool } }, b: { type: 'number', default: 0 } }
   checks if the type is matching and fills them in if they were left out
 */
 function validate(arguments, defaults) {
@@ -328,8 +328,8 @@ let specificationCoverageDefaults = {
   },
   f: {
     type: 'string',
-    default: 'defaultContentF',
-    validate: (x) => { console.log('HALLO'); return x === 'inputValidationFUnsuccessfull' }
+    validate: (x) => { console.log('HALLO'); return x === 'inputValidationFUnsuccessfull' },
+    default: 'defaultContentF'
   },
   g: {
     type: 'number',
@@ -337,8 +337,8 @@ let specificationCoverageDefaults = {
   },
   h: {
     type: 'string',
-    default: 'defaultContentH',
-    validate: (x) => { return x === 'inputValidationHSuccessfull' }
+    validate: (x) => { return x === 'inputValidationHSuccessfull' },
+    default: 'defaultContentH'
   },
   i: {
     required: true,
