@@ -4,6 +4,8 @@ Provides a simple way to validate raw JSON input for safe handling during proces
 
 ### Usage
 
+  Checkout example.js for more details
+
   ```javascript
   let raw = {
     a: 'string-value',
