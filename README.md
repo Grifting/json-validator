@@ -2,6 +2,10 @@
 
 Provides a simple way to validate raw JSON input for safe handling during processing.
 
+### Installation
+
+`npm i json-validator --save`
+
 ### Usage
 
   Checkout example.js for more details
