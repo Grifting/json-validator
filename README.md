@@ -34,6 +34,11 @@ Provides a simple way to validate raw JSON input for safe handling during proces
 
   **+** Initial release<br>
 
+### Upcoming
+
+- [ ] Stable tested release
+- [ ] Published as official NPM Package
+
 ### Team
 
 [@Grifting](https://github.com/Grifting)<br>
