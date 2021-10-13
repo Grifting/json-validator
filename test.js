@@ -1,4 +1,4 @@
-let validator = require('./validator')
+let Validator = require('./validator')
 
 // Tests are designed to test correct input validation
 // Default templates are not validated for missing specifications
@@ -14,7 +14,7 @@ let defaults1 = {
   }
 }
 
-let results1 = validator(raw1, defaults1)
+let results1 = new Validator(raw1, defaults1).validation
 
 console.log(results1)
 
@@ -31,7 +31,7 @@ let defaults2 = {
   }
 }
 
-let results2 = validator(raw2, defaults2)
+let results2 = new Validator(raw2, defaults2).validation
 
 console.log(results2)
 
@@ -48,6 +48,9 @@ let defaults3 = {
   }
 }
 
-let results3 = validator(raw3, defaults3)
+// required: false,
+// validate: (a) => { return a === 1 }
+
+let results3 = new Validator(raw3, defaults3).validation
 
 console.log(results3)
