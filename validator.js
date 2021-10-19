@@ -1,130 +1,167 @@
 class Validator {
 
-  #validation = undefined
+  #input = undefined
+  #template = undefined
+
+  #validation = {
+    valid: {},        // valid to spec
+    critical: [],     // required missing or invalid to spec
+    missmatch: {},    // optional missing or invalid to spec
+    unspecified: {}   // not specified in spec
+  }
 
   constructor(input, template) {
-    this.validate(input, template)
+    this.#input = input
+    this.#template = template
+
+    this.validate()
   }
 
   get validation() {
     return this.#validation
   }
 
-  validate(input, template) {
+  validate(input = this.#input, template = this.#template) {
 
-    this.setEmptyValidationTemplate()
+    this.#isInputDefined()
+    this.#isTemplateDefined()
 
-    // check if arguments are empty
-    if (typeof input !== 'object') {
-      return this.#validation
-    }
+    this.#filterUnspecified()
 
-    this.validateTemplates(input, template)
+    this.#validateListToSpec()
 
-    this.collectMissmatches(input, template)
-    this.cleanValidationResult()
-    
+    this.#cleanValidationResult()
+
     return this.#validation
   }
 
-  check(key, input, template) {
-    // if its an included arg check
-    // if it is the correct type and validate it
-    if (input !== undefined) {
-      // CHECK INPUT TYPE RESTRICTION
-      if (typeof input === template.type) {
+  #isInputDefined() {
+    if (typeof this.#input !== 'object') {
+      this.#input = { }
+    }
+  }
 
-        /* START DEFAULT VALIDATION */
-        if (template.validate !== undefined) {
-          if (template.validate(input)) {
-            this.#validation.validated[key] = input
-          } else {
-            let fallback = template.default
-            this.#validation.validated[key] = fallback ? (typeof fallback === 'function' ? fallback(input) : fallback) : 'ERR_NO_DEFAULT_PROVIDED_1'
-            this.#validation.invalid[key] = input
-          }
-        } else {
-          this.#validation.validated[key] = input
-          // console.log(template);
-        }
-        /* END DEFAULT VALIDATION */
+  #isTemplateDefined() {
+    if (typeof this.#template !== 'object') {
+      this.#template = { }
+    }
+  }
 
-      } else {
-        let fallback = template.default
-        this.#validation.invalid[key] = input
-        if (fallback !== undefined) {
-          if (template.required !== undefined) {
-            if (template.required === true) {
-              this.#validation.validated[key] = fallback
-            }
-          } else {
-            this.#validation.validated[key] = fallback
-          }
-        } else {
-          this.#validation.validated[key] = 'ERR_NO_DEFAULT_PROVIDED_2'
-        }
+  #filterUnspecified() {
+    let items = Object.keys(this.#input)
+
+    for (let item of items) {
+      if (this.#isSpecified(item) === false) {
+        this.#validation.unspecified[item] = this.#input[item]
+        delete this.#input[item]
       }
+    }
+  }
 
+  #isSpecified(item) {
+    let specs = Object.keys(this.#template)
+    let isSpecified = false
+
+    for (let spec of specs) {
+      if (item === spec) {
+        isSpecified = true
+        break;
+      }
+    }
+
+    return isSpecified
+  }
+
+  #cleanValidationResult() {
+    if (Object.keys(this.#validation.valid).length === 0) {
+      delete this.#validation.valid
+    }
+
+    if (Object.keys(this.#validation.critical).length === 0) {
+      delete this.#validation.critical
+    }
+
+    if (Object.keys(this.#validation.missmatch).length === 0) {
+      delete this.#validation.missmatch
+    }
+
+    if (Object.keys(this.#validation.unspecified).length === 0) {
+      delete this.#validation.unspecified
+    }
+  }
+
+  #validateListToSpec() {
+    let items = Object.keys(this.#input)
+
+    for (let item of items) {
+      this.#validateItemToSpec(item, this.#template[item])
+      delete this.#template[item]
+    }
+  }
+
+  #validateItemToSpec(item, spec) {
+
+    if (this.#isItemNull(item, spec)) {
+      this.#markInvalid(item, spec)
+      return
+    }
+
+    if (this.#isTypeMatching(item, spec) === false) {
+      this.#markInvalid(item, spec)
+      return
+    }
+
+    if (this.#isValidationMatching(item, spec) === false) {
+      this.#markInvalid(item, spec)
+      return
+    }
+
+    this.#validation.valid[item] = this.#input[item]
+  }
+
+  #isValidationMatching(item, spec) {
+    if (spec.validate === undefined) {
+      return true
+    }
+
+    if (typeof spec.validate !== 'function') {
+      console.log(`WRN: spec for ${item} is not a function`)
+      return true
+    }
+
+    return spec.validate(this.#input[item])
+  }
+
+  #isItemNull(item, spec) {
+    return this.#input[item] === undefined
+  }
+
+  #isTypeMatching(item, spec) {
+    if (spec.type === undefined) {
+      return true
+    }
+
+    return typeof this.#input[item] === spec.type
+  }
+
+  #markInvalid(item, spec) {
+    if (spec.required === true) {
+      this.#validation.critical[item] = this.#input[item]
+      // critical items can't have a default
     } else {
-      let fallback = template.default
-      if (fallback !== undefined) {
-        if (template.required === false) {
-          // this.#validation.missing input is optional can be ignored
-        } else {
-          this.#validation.validated[key] = fallback
-          this.#validation.missing.push(key)
-        }
-      } else {
-        this.#validation.validated[key] = 'ERR_NO_DEFAULT_PROVIDED_3'
-        this.#validation.missing.push(key)
-      }
+      this.#validation.missmatch[item] = this.#input[item]
+      this.#checkDefault(item, spec)
     }
   }
 
-  validateTemplates(input, template) {
-    Object.keys(template).forEach(key => {
-      this.check(key, input[key], template[key])
-    })
-  }
-
-  setEmptyValidationTemplate() {
-    // validation result
-    this.#validation = {
-      validated: {},   // the validation.validated output created using defaults
-      missing: [],     // the validation.missing inputs validation.validated through fallbacks
-      missmatches: {}, // unknown inputs that were straight ignored
-      invalid: {}      // not by template specified
-    }
-  }
-
-  collectMissmatches(input, template) {
-    // collect validation.missmatches
-    Object.keys(input).forEach((key) => {
-      if (template[key] === undefined) {
-        this.#validation.missmatches[key] = input[key]
-      }
-    })
-  }
-
-  cleanValidationResult() {
-    // delete validation.missing, validation.missmatches and validation.invalid if empty from result
-    if (this.#validation.missing.length === 0) {
-      delete this.#validation.missing
+  #checkDefault(item, spec) {
+    if (spec.default === undefined) {
+      return
     }
 
-    if (Object.keys(this.#validation.missmatches).length === 0) {
-      delete this.#validation.missmatches
-    }
-
-    if (Object.keys(this.#validation.invalid).length === 0) {
-      delete this.#validation.invalid
-    }
-
-    return this.#validation
+    this.#validation.valid[item] = spec.default
   }
 
 }
-
-
 
 module.exports = Validator
