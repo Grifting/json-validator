@@ -30,9 +30,19 @@ class Validator {
 
     this.#validateListToSpec()
 
+    this.#specLeftover()
+
     this.#cleanValidationResult()
 
     return this.#validation
+  }
+
+  #specLeftover() {
+    let specs = Object.keys(this.#template)
+
+    for (let spec of specs) {
+      this.#markInvalid(spec, this.#template[spec])
+    }
   }
 
   #isInputDefined() {
